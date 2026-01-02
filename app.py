@@ -1,64 +1,85 @@
 import streamlit as st
-from streamlit_calendar import calendar # Requiere instalarse, ver nota abajo
+from streamlit_calendar import calendar
+from datetime import datetime
 
-st.set_page_config(page_title="PadelYa - Agenda", page_icon="🎾", layout="wide")
+# Configuración de página
+st.set_page_config(page_title="PadelYa - Reservas", page_icon="🎾", layout="wide")
 
-# Estilo PadelYa Nocturno
+# Estilo Visual PadelYa
 st.markdown("""
     <style>
     .stApp { background-color: #0b1e1e; color: white; }
-    .fc-v-event { background-color: #2ecc71 !important; border: none !important; } /* Color de turnos ocupados */
-    .stButton>button { background-color: #f1c40f !important; color: black !important; }
+    .stTabs [data-baseweb="tab-list"] { gap: 10px; background-color: #0b1e1e; }
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        background-color: #1a2e2e;
+        border-radius: 10px 10px 0px 0px;
+        color: white;
+        font-weight: bold;
+    }
+    .stTabs [aria-selected="true"] { 
+        background-color: #2ecc71 !important; 
+        color: black !important;
+    }
+    .stButton>button {
+        background-color: #f1c40f !important;
+        color: black !important;
+        font-weight: bold;
+        border-radius: 15px;
+    }
+    /* Estilo para los eventos libres en el calendario */
+    .fc-event-main { color: black !important; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🎾 Agenda de Turnos PadelYa")
-
-# 1. Base de datos de turnos (Simulada)
-if 'events' not in st.session_state:
-    st.session_state.events = [
-        {"title": "RESERVADO - Juan", "start": "2026-01-02T18:00:00", "end": "2026-01-02T20:00:00"},
-        {"title": "RESERVADO - Fer", "start": "2026-01-02T20:00:00", "end": "2026-01-02T22:00:00"},
+# 1. Base de datos simulada de horarios DISPONIBLES
+if 'horarios_libres' not in st.session_state:
+    st.session_state.horarios_libres = [
+        {"title": "LIBRE", "start": "2026-01-02T16:00:00", "end": "2026-01-02T18:00:00", "backgroundColor": "#2ecc71"},
+        {"title": "LIBRE", "start": "2026-01-02T18:00:00", "end": "2026-01-02T20:00:00", "backgroundColor": "#2ecc71"},
+        {"title": "LIBRE", "start": "2026-01-02T20:00:00", "end": "2026-01-02T22:00:00", "backgroundColor": "#2ecc71"},
     ]
 
-col1, col2 = st.columns([3, 1])
+st.title("🎾 PadelYa")
 
-with col1:
-    # CONFIGURACIÓN DEL CALENDARIO
-    calendar_options = {
-        "initialView": "timeGridDay", # Vista de día con horas
-        "slotMinTime": "08:00:00",
-        "slotMaxTime": "23:59:00",
-        "allDaySlot": False,
-        "headerToolbar": {
-            "left": "prev,next today",
-            "center": "title",
-            "right": "timeGridDay,timeGridWeek",
-        },
-        "slotDuration": "01:00:00", # Bloques de 1 hora (mostraremos 2 para el turno)
-    }
+tab_jugador, tab_dueno = st.tabs(["🎾 BUSCAR CANCHA", "🔐 PANEL DUEÑO"])
+
+# --- VISTA JUGADOR ---
+with tab_jugador:
+    st.header("Canchas Libres en Posadas")
     
-    state = calendar(events=st.session_state.events, options=calendar_options)
-    st.write("👆 *Toca un espacio vacío para solicitar o un turno para ver detalles*")
-
-with col2:
-    st.subheader("Nuevas Reservas")
-    with st.form("nueva_reserva"):
-        nombre = st.text_input("Nombre del Jugador")
-        fecha = st.date_input("Fecha")
-        hora_inicio = st.time_input("Hora de inicio")
+    col_a, col_b = st.columns([1, 2])
+    
+    with col_a:
+        st.subheader("1. Filtros")
+        complejo = st.selectbox("Elegí el Complejo:", ["World Padel Center", "La Terraza", "Padel Pro"])
+        st.info("Solo se muestran los turnos de 120 min disponibles.")
         
-        if st.form_submit_button("AGENDAR TURNO 120 MIN"):
-            # Lógica para crear el evento de 2 horas
-            start_dt = f"{fecha}T{hora_inicio}"
-            # Agregamos a la lista
-            st.session_state.events.append({
-                "title": f"OCUPADO - {nombre}",
-                "start": start_dt,
-                "end": start_dt # Aquí podrías sumar 2 horas con datetime
-            })
-            st.rerun()
+        st.subheader("2. Tu Reserva")
+        nombre = st.text_input("Nombre del Capitán:")
+        horario_elegido = st.selectbox("Elegí un horario libre del calendario:", 
+                                      [f"{h['start'][11:16]} a {h['end'][11:16]}" for h in st.session_state.horarios_libres])
+        
+        if st.button("RESERVAR AHORA"):
+            if nombre:
+                st.success(f"¡Pedido enviado! Pagá la seña para confirmar tu turno en {complejo}.")
+                st.link_button("💳 PAGAR SEÑA ($3.600)", "https://www.mercadopago.com.ar")
+            else:
+                st.error("Ingresá tu nombre para reservar.")
 
-    if st.button("Limpiar Agenda"):
-        st.session_state.events = []
-        st.rerun()
+    with col_b:
+        st.subheader("Disponibilidad Horaria")
+        opciones_cal = {
+            "initialView": "timeGridDay",
+            "locale": "es",
+            "slotMinTime": "08:00:00",
+            "slotMaxTime": "23:59:00",
+            "allDaySlot": False,
+            "headerToolbar": {"left": "prev,next", "center": "title", "right": ""},
+        }
+        calendar(events=st.session_state.horarios_libres, options=opciones_cal, key="cal_jugador")
+
+# --- VISTA DUEÑO ---
+with tab_dueno:
+    st.subheader("Administración de Cancha")
+    clave = st.text_input("Clave:", type="password")
