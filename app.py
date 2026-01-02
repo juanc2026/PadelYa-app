@@ -1,85 +1,141 @@
 import streamlit as st
-from streamlit_calendar import calendar
 from datetime import datetime
 
-# Configuración de página
-st.set_page_config(page_title="PadelYa - Reservas", page_icon="🎾", layout="wide")
+# Configuración de página estilo Mobile
+st.set_page_config(page_title="PadelYa", page_icon="🎾", layout="centered")
 
-# Estilo Visual PadelYa
+# CSS para replicar el diseño de la imagen (Colores y formas)
 st.markdown("""
     <style>
-    .stApp { background-color: #0b1e1e; color: white; }
-    .stTabs [data-baseweb="tab-list"] { gap: 10px; background-color: #0b1e1e; }
-    .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        background-color: #1a2e2e;
-        border-radius: 10px 10px 0px 0px;
-        color: white;
-        font-weight: bold;
+    .stApp { background-color: #f8f9fa; color: #333; }
+    
+    /* Tarjetas de Complejos */
+    .card {
+        background-color: white;
+        border-radius: 15px;
+        padding: 0px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        overflow: hidden;
     }
-    .stTabs [aria-selected="true"] { 
-        background-color: #2ecc71 !important; 
-        color: black !important;
+    .card-img {
+        width: 100%; height: 120px;
+        background-color: #2ecc71;
+        background-image: linear-gradient(to bottom right, #2ecc71, #27ae60);
     }
+    .card-content { padding: 15px; }
+    
+    /* Grilla de Horarios (Botones Verdes) */
     .stButton>button {
+        border-radius: 10px;
+        height: 50px;
+        font-weight: bold;
+        border: none;
+    }
+    
+    /* Botón de Pago Amarillo */
+    div[data-testid="stForm"] .stButton>button {
         background-color: #f1c40f !important;
         color: black !important;
-        font-weight: bold;
-        border-radius: 15px;
+        font-size: 18px !important;
+        margin-top: 20px;
     }
-    /* Estilo para los eventos libres en el calendario */
-    .fc-event-main { color: black !important; }
+    
+    /* Tabs personalizadas */
+    .stTabs [data-baseweb="tab-list"] { background-color: white; padding: 5px; border-radius: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
-# 1. Base de datos simulada de horarios DISPONIBLES
-if 'horarios_libres' not in st.session_state:
-    st.session_state.horarios_libres = [
-        {"title": "LIBRE", "start": "2026-01-02T16:00:00", "end": "2026-01-02T18:00:00", "backgroundColor": "#2ecc71"},
-        {"title": "LIBRE", "start": "2026-01-02T18:00:00", "end": "2026-01-02T20:00:00", "backgroundColor": "#2ecc71"},
-        {"title": "LIBRE", "start": "2026-01-02T20:00:00", "end": "2026-01-02T22:00:00", "backgroundColor": "#2ecc71"},
+# Lógica de navegación simple
+if 'pantalla' not in st.session_state:
+    st.session_state.pantalla = "inicio"
+if 'complejo_sel' not in st.session_state:
+    st.session_state.complejo_sel = None
+
+# --- PANTALLA 1: COMPLEJOS EN POSADAS ---
+if st.session_state.pantalla == "inicio":
+    st.markdown("<h2 style='text-align: center; color: #1a2e2e;'>Complejos en Posadas</h2>", unsafe_allow_html=True)
+    
+    canchas = [
+        {"nombre": "World Padel Center", "ubi": "Costanera", "rating": "4.8"},
+        {"nombre": "La Terraza", "ubi": "Av. Uruguay", "rating": "4.5"},
+        {"nombre": "Padel Pro", "ubi": "Itaembé Guazú", "rating": "4.7"}
     ]
-
-st.title("🎾 PadelYa")
-
-tab_jugador, tab_dueno = st.tabs(["🎾 BUSCAR CANCHA", "🔐 PANEL DUEÑO"])
-
-# --- VISTA JUGADOR ---
-with tab_jugador:
-    st.header("Canchas Libres en Posadas")
     
-    col_a, col_b = st.columns([1, 2])
+    for c in canchas:
+        with st.container():
+            st.markdown(f"""
+            <div class="card">
+                <div class="card-img"></div>
+                <div class="card-content">
+                    <h3 style='margin:0;'>{c['nombre']}</h3>
+                    <p style='color:gray; margin:0;'>⭐ {c['rating']} | {c['ubi']}, Posadas</p>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button(f"Seleccionar {c['nombre']}", key=c['nombre']):
+                st.session_state.complejo_sel = c['nombre']
+                st.session_state.pantalla = "horarios"
+                st.rerun()
+
+# --- PANTALLA 2: SELECCIONAR HORARIO ---
+elif st.session_state.pantalla == "horarios":
+    if st.button("⬅️ Volver"):
+        st.session_state.pantalla = "inicio"
+        st.rerun()
+        
+    st.title(st.session_state.complejo_sel)
+    st.subheader("Seleccionar Horario")
     
-    with col_a:
-        st.subheader("1. Filtros")
-        complejo = st.selectbox("Elegí el Complejo:", ["World Padel Center", "La Terraza", "Padel Pro"])
-        st.info("Solo se muestran los turnos de 120 min disponibles.")
+    # Días (como en la imagen)
+    st.write("📅 **Enero 2026**")
+    st.write("Hoy, Vie 02 | Sáb 03 | Dom 04 | Lun 05")
+    
+    st.markdown("---")
+    st.write("🍀 **Césped Sintético**")
+    
+    # Grilla de horarios
+    col1, col2 = st.columns(2)
+    horarios = ["16:00", "17:30", "19:00", "20:30", "22:00", "23:30"]
+    
+    for i, h in enumerate(horarios):
+        col = col1 if i % 2 == 0 else col2
+        if col.button(h, key=f"h_{h}"):
+            st.session_state.horario_sel = h
+            st.session_state.pantalla = "pago"
+            st.rerun()
+
+# --- PANTALLA 3: CONFIRMAR Y PAGAR ---
+elif st.session_state.pantalla == "pago":
+    if st.button("⬅️ Cambiar Horario"):
+        st.session_state.pantalla = "horarios"
+        st.rerun()
         
-        st.subheader("2. Tu Reserva")
-        nombre = st.text_input("Nombre del Capitán:")
-        horario_elegido = st.selectbox("Elegí un horario libre del calendario:", 
-                                      [f"{h['start'][11:16]} a {h['end'][11:16]}" for h in st.session_state.horarios_libres])
+    st.markdown("<h2 style='text-align: center;'>Confirmar Reserva</h2>", unsafe_allow_html=True)
+    
+    with st.form("pago_form"):
+        st.write(f"**Complejo:** {st.session_state.complejo_sel}")
+        st.write(f"**Horario:** {st.session_state.horario_sel} hs")
+        st.write(f"**Duración:** 120 min")
+        st.divider()
+        st.write("💰 **Precio Total:** $12.000")
+        st.write("💳 **Seña requerida (30%):** $3.600")
         
-        if st.button("RESERVAR AHORA"):
+        nombre = st.text_input("Nombre completo")
+        
+        # El botón amarillo de la imagen
+        enviar = st.form_submit_button(f"Pagar Seña ($3.600) 🔒")
+        
+        if enviar:
             if nombre:
-                st.success(f"¡Pedido enviado! Pagá la seña para confirmar tu turno en {complejo}.")
-                st.link_button("💳 PAGAR SEÑA ($3.600)", "https://www.mercadopago.com.ar")
+                st.success(f"¡Reserva pre-confirmada para {nombre}!")
+                st.info("Redirigiendo a Mercado Pago...")
+                # Aquí iría el link real: st.link_button("Ir a MP", "URL")
             else:
-                st.error("Ingresá tu nombre para reservar.")
+                st.error("Por favor ingresá tu nombre")
 
-    with col_b:
-        st.subheader("Disponibilidad Horaria")
-        opciones_cal = {
-            "initialView": "timeGridDay",
-            "locale": "es",
-            "slotMinTime": "08:00:00",
-            "slotMaxTime": "23:59:00",
-            "allDaySlot": False,
-            "headerToolbar": {"left": "prev,next", "center": "title", "right": ""},
-        }
-        calendar(events=st.session_state.horarios_libres, options=opciones_cal, key="cal_jugador")
-
-# --- VISTA DUEÑO ---
-with tab_dueno:
-    st.subheader("Administración de Cancha")
-    clave = st.text_input("Clave:", type="password")
+# --- BOTÓN DE ADMINISTRACIÓN (FLOTANTE ABAJO) ---
+st.sidebar.markdown("---")
+if st.sidebar.button("🔐 Acceso Dueño"):
+    st.session_state.pantalla = "inicio"
+    st.sidebar.write("Clave: admin123")
