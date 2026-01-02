@@ -1,81 +1,119 @@
 import streamlit as st
-from datetime import time
 
-# Configuración de estilo "App Mobile"
-st.set_page_config(page_title="PadelYa Posadas", page_icon="🎾", layout="centered")
+# CONFIGURACIÓN DE IMAGEN Y DISEÑO
+st.set_page_config(page_title="PadelYa", page_icon="🎾", layout="centered")
 
+# CSS para que se vea como el diseño de la imagen
 st.markdown("""
     <style>
-    .main { background-color: #f0f2f6; }
-    .stButton>button { width: 100%; border-radius: 10px; height: 3em; font-weight: bold; }
-    .stSelectbox { border-radius: 10px; }
+    /* Fondo general */
+    .stApp {
+        background-color: #0b1e1e;
+    }
+    
+    /* Títulos y textos */
+    h1, h2, h3, p, span {
+        color: white !important;
+        font-family: 'sans-serif';
+    }
+
+    /* Tarjetas de complejos */
+    .cancha-card {
+        background-color: #1a2e2e;
+        padding: 15px;
+        border-radius: 15px;
+        border-left: 5px solid #2ecc71;
+        margin-bottom: 20px;
+    }
+
+    /* Botón principal estilo PadelYa (Amarillo) */
+    .stButton>button {
+        background-color: #f1c40f !important;
+        color: black !important;
+        font-weight: bold !important;
+        border-radius: 25px !important;
+        border: none !important;
+        height: 3em !important;
+        text-transform: uppercase;
+    }
+
+    /* Estilo de los inputs */
+    .stSelectbox, .stTextInput {
+        background-color: #1a2e2e !important;
+        color: white !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
+# ENCABEZADO
 st.title("🎾 PadelYa")
-st.caption("Reserva tu turno de 120 min en Posadas")
+st.write("Reserva tu turno de 120 min en Posadas")
 
-# Simulamos base de datos en la sesión
+# MENÚ LATERAL
+menu = st.sidebar.radio("Navegación", ["Explorar Canchas", "Mis Reservas", "Panel Dueño"])
+
 if 'reservas' not in st.session_state:
     st.session_state.reservas = []
 
-menu = st.sidebar.selectbox("Menú", ["Reservar Turno", "Soy Dueño (Panel)"])
+# --- PANTALLA 1: EXPLORAR (EL DISEÑO QUE VISTE) ---
+if menu == "Explorar Canchas":
+    st.subheader("Complejos en Posadas")
+    
+    # Simulación de las tarjetas de la imagen
+    with st.container():
+        st.markdown("""
+        <div class="cancha-card">
+            <h4>World Padel Center</h4>
+            <p>⭐ 4.8 | Costanera, Posadas</p>
+            <p><b>Precio 120 min: $12.000</b></p>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("RESERVAR EN WORLD PADEL"):
+            st.session_state.paso = "horario"
+            st.session_state.complejo_sel = "World Padel Center"
 
-# --- VISTA JUGADOR ---
-if menu == "Reservar Turno":
-    st.subheader("📍 Elegí tu Cancha")
-    complejo = st.selectbox("Complejo:", ["World Padel Center", "La Terraza", "Padel Pro"])
-    
-    precio_total = 12000
-    monto_seña = precio_total * 0.30
-    
-    st.info(f"Precio: ${precio_total} | Seña: ${monto_seña:.0f}")
-    
-    horario = st.select_slider("Horario (2 horas):", 
-                               options=["16:00 a 18:00", "18:00 a 20:00", "20:00 a 22:00", "22:00 a 00:00"])
-    
-    nombre = st.text_input("Tu Nombre:")
-    
-    if st.button("SOLICITAR TURNO"):
-        if nombre:
-            nueva_reserva = {
-                "jugador": nombre,
-                "complejo": complejo,
-                "horario": horario,
-                "estado": "Pendiente",
-                "seña": monto_seña
-            }
-            st.session_state.reservas.append(nueva_reserva)
-            st.success("📩 Solicitud enviada. Avisale al dueño para que la apruebe.")
-        else:
-            st.error("Por favor, poné tu nombre.")
+    with st.container():
+        st.markdown("""
+        <div class="cancha-card">
+            <h4>La Terraza</h4>
+            <p>⭐ 4.5 | Av. Uruguay, Posadas</p>
+            <p><b>Precio 120 min: $11.500</b></p>
+        </div>
+        """, unsafe_allow_html=True)
+        st.button("RESERVAR EN LA TERRAZA")
 
-# --- PANEL DEL DUEÑO ---
-else:
-    st.subheader("📋 Gestión de Turnos")
+# --- PANTALLA 2: SELECCIÓN DE HORARIO ---
+if menu == "Explorar Canchas" and 'complejo_sel' in st.session_state:
+    st.divider()
+    st.subheader(f"Horarios para {st.session_state.complejo_sel}")
+    hora = st.select_slider("Seleccioná tu bloque de 2 horas:", 
+                           options=["18:00 a 20:00", "20:00 a 22:00", "22:00 a 00:00"])
     
+    nombre = st.text_input("Tu nombre para la reserva:")
+    
+    if st.button("SOLICITAR AHORA"):
+        st.session_state.reservas.append({
+            "jugador": nombre,
+            "horario": hora,
+            "estado": "Pendiente",
+            "complejo": st.session_state.complejo_sel
+        })
+        st.balloons()
+        st.success("¡Solicitud enviada! El dueño te confirmará en breve.")
+
+# --- PANTALLA 3: PANEL DUEÑO ---
+if menu == "Panel Dueño":
+    st.subheader("Gestión de Turnos")
     if not st.session_state.reservas:
-        st.write("No hay pedidos pendientes.")
+        st.write("No hay solicitudes hoy.")
     else:
         for i, res in enumerate(st.session_state.reservas):
-            col1, col2 = st.columns([2, 1])
-            
-            with col1:
-                st.write(f"**{res['jugador']}** - {res['horario']}")
-                st.caption(f"Estado: {res['estado']}")
-            
-            with col2:
-                if res["estado"] == "Pendiente":
-                    if st.button("✅ APROBAR", key=f"ok_{i}"):
-                        res["estado"] = "Aprobado (Pagar Seña)"
-                        st.rerun()
-                
-                # BOTÓN DE MERCADO PAGO REAL (Aparece cuando el dueño aprueba)
-                if res["estado"] == "Aprobado (Pagar Seña)":
-                    # AQUÍ PEGAS TU LINK DE MERCADO PAGO
-                    link_mp = "https://www.mercadopago.com.ar" 
-                    st.link_button("💳 PAGAR SEÑA", link_mp, type="primary")
-
-    if st.button("Limpiar historial (Prueba)"):
-        st.session_state.reservas = []
-        st.rerun()
+            st.markdown(f"""
+            <div style="background-color:#2c3e50; padding:10px; border-radius:10px; margin-bottom:10px">
+                <p>Jugador: {res['jugador']}<br>Horario: {res['horario']}<br>Estado: {res['estado']}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            if res['estado'] == "Pendiente":
+                if st.button(f"ACEPTAR TURNO DE {res['jugador']}", key=i):
+                    res['estado'] = "Aprobado - Esperando Seña"
+                    st.rerun()
